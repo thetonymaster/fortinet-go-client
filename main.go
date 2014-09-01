@@ -20,7 +20,6 @@ func main(){
        case  msg:= <- sigs: {
          fmt.Println()
          fmt.Println(msg)
-
          return
        }
      }

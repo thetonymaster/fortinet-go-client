@@ -7,19 +7,7 @@ import (
 )
 
 func Execute(command string) []string {
-  fileContent, err := ioutil.ReadFile("proxylist.txt")
-  if err != nil {
-    ioutil.WriteFile("proxylist.txt", nil, os.ModePerm)
-  }
-
-  var ips []string
-
-  if len(fileContent) == 0 {
-    ips = []string{}
-  } else {
-    stringFileContent := string(fileContent)
-    ips = strings.Split(stringFileContent, ",")
-  }
+  ips := GetAddresses()
   parsedCommand := strings.Split(cleanCommand(command), " ")
 
   if parsedCommand[0] == "a" {
@@ -51,4 +39,23 @@ func Execute(command string) []string {
 
 func cleanCommand(command string) string{
   return strings.Trim(strings.Replace(command, "\r\n", " ", -1), " ")
+}
+
+func GetAddresses() []string {
+  
+  fileContent, err := ioutil.ReadFile("proxylist.txt")
+  if err != nil {
+    ioutil.WriteFile("proxylist.txt", nil, os.ModePerm)
+  }
+
+  var ips []string
+
+  if len(fileContent) == 0 {
+    ips = []string{}
+  } else {
+    stringFileContent := string(fileContent)
+    ips = strings.Split(stringFileContent, ",")
+  }
+
+  return ips
 }

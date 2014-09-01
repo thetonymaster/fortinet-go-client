@@ -70,3 +70,14 @@ func ExampleCleanCommand() {
   // Output:
   // l
 }
+
+func ExampleGetAddresses() {
+  CleanUp()
+  Execute("a 192.168.0.123\r\n")
+  Execute("a 192.168.0.124\r\n")
+
+  fmt.Println(GetAddresses())
+
+  // Output:
+  // [192.168.0.123 192.168.0.124]
+}
