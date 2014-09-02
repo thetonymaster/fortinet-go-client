@@ -4,7 +4,7 @@ import (
   "fmt"
   "net"
   "time"
-  "antonio-cabreraglz/fortinet-go-client/proxymanager"
+  "github.com/antonio-cabreraglz/fortinet-go-client/proxymanager"
   "os"
   "syscall"
 )
