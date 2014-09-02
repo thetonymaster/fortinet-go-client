@@ -3,3 +3,4 @@ proxymanager/proxymanager.test
 fortinet-go-client
 proxylist.txt
 *.test
+fortinet.log

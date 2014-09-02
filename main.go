@@ -1,10 +1,15 @@
 package main
 
 import (
+  . "github.com/antonio-cabreraglz/fortinet-go-client/logger"
+
   "os"
   "os/signal"
   "github.com/antonio-cabreraglz/fortinet-go-client/proxymanager"
+  "github.com/antonio-cabreraglz/fortinet-go-client/proxy"
   "fmt"
+  "flag"
+  "syscall"
 )
 
 var runAsServer bool
@@ -16,16 +21,22 @@ func init() {
 }
 
 func main(){
+  Log("asdfakjfhadsjkfhjdksa")
   flag.Parse()
 
   sigs := make(chan os.Signal, 1)
   signal.Notify(sigs, syscall.SIGINT)
 
   if runAsServer {
-    go  proxy.StartListener(":3030", sigs)
-  } else {
+    serverAddress := "255.255.255.255:514"
     go proxymanager.StartServer()
-    go proxy.ListenUDP("255.255.255.255:514")
+    go proxy.ListenUDP(serverAddress)
+    Log("Starting server at " + serverAddress)
+  } else {
+
+    serverAddress := ":3030"
+    go  proxy.StartListener(":3030", nil)
+    Log("Starting client at " + serverAddress)
   }
 
   for {

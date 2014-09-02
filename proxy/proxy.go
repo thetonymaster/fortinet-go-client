@@ -1,12 +1,13 @@
 package proxy
 
 import (
+  . "github.com/antonio-cabreraglz/fortinet-go-client/logger"
   "fmt"
   "net"
   "time"
   "github.com/antonio-cabreraglz/fortinet-go-client/proxymanager"
   "os"
-  //"syscall"
+  "syscall"
 )
 
 func ListenUDP(addr string) {
@@ -43,6 +44,7 @@ func ListenUDP(addr string) {
 }
 
 func StartProxyWriter(updChannel <- chan []byte, forwardAddress string) {
+  Log("Starting proxy writer " + forwardAddress)
   udpWriterAddr, err := net.ResolveUDPAddr("udp4", forwardAddress)
 
   if err != nil {
@@ -66,6 +68,7 @@ func StartProxyWriter(updChannel <- chan []byte, forwardAddress string) {
 }
 
 func StartListener(addr string, sigs chan <- os.Signal){
+  Log("Starting listener on" + addr)
 
   udpAddress, err := net.ResolveUDPAddr("udp4", addr)
   if err != nil {
@@ -93,6 +96,8 @@ func StartListener(addr string, sigs chan <- os.Signal){
     fmt.Println(n)
     fmt.Println(string(buf[0:n]))
 
-    //sigs <- syscall.SIGINT
+    if sigs != nil {
+      sigs <- syscall.SIGINT
+    }
   }
 }
