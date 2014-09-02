@@ -3,12 +3,7 @@ package main
 import (
   "os"
   "os/signal"
-  "syscall"
-  "flag"
-
-  "antonio-cabreraglz/fortinet-go-client/proxymanager"
-  "antonio-cabreraglz/fortinet-go-client/proxy"
-
+  "github.com/antonio-cabreraglz/fortinet-go-client/proxymanager"
   "fmt"
 )
 
