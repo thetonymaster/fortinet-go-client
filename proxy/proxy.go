@@ -6,7 +6,7 @@ import (
   "time"
   "antonio-cabreraglz/fortinet-go-client/proxymanager"
   "os"
-  "syscall"
+  //"syscall"
 )
 
 func ListenUDP(addr string) {
@@ -93,6 +93,6 @@ func StartListener(addr string, sigs chan <- os.Signal){
     fmt.Println(n)
     fmt.Println(string(buf[0:n]))
 
-    sigs <- syscall.SIGINT
+    //sigs <- syscall.SIGINT
   }
 }
