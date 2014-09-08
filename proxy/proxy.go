@@ -1,103 +1,102 @@
 package proxy
 
 import (
-  . "github.com/antonio-cabreraglz/fortinet-go-client/logger"
-  "fmt"
-  "net"
-  "time"
-  "github.com/antonio-cabreraglz/fortinet-go-client/proxymanager"
-  "os"
-  "syscall"
+	"fmt"
+	. "github.com/antonio-cabreraglz/fortinet-go-client/logger"
+	"github.com/antonio-cabreraglz/fortinet-go-client/proxymanager"
+	"net"
+	"os"
+	"syscall"
+	"time"
 )
 
 func ListenUDP(addr string) {
-  udpAddress, err := net.ResolveUDPAddr("udp4", addr)
-  if err != nil {
-    panic(err)
-  }
-  conn, err := net.ListenUDP("udp4", udpAddress)
+	udpAddress, err := net.ResolveUDPAddr("udp4", addr)
+	if err != nil {
+		panic(err)
+	}
+	conn, err := net.ListenUDP("udp4", udpAddress)
 
-  if err != nil {
-    panic(err)
-  }
+	if err != nil {
+		panic(err)
+	}
 
-  defer conn.Close()
+	defer conn.Close()
 
-  var buf []byte = make([]byte, 1500)
-  udpChannel := make(chan []byte)
+	var buf []byte = make([]byte, 1500)
+	udpChannel := make(chan []byte)
 
-  for _, address := range proxymanager.GetAddresses() {
-    go StartProxyWriter(udpChannel, address)
-  }
+	for _, address := range proxymanager.GetAddresses() {
+		go StartProxyWriter(udpChannel, address)
+	}
 
-  for {
-    time.Sleep(100 * time.Millisecond)
-    n, _, err := conn.ReadFromUDP(buf)
+	for {
+		time.Sleep(100 * time.Millisecond)
+		n, _, err := conn.ReadFromUDP(buf)
 
-    if err != nil {
-      panic(err)
-    }
+		if err != nil {
+			panic(err)
+		}
 
-    udpChannel <- buf[0:n]
-  }
-
-}
-
-func StartProxyWriter(updChannel <- chan []byte, forwardAddress string) {
-  Log("Starting proxy writer " + forwardAddress)
-  udpWriterAddr, err := net.ResolveUDPAddr("udp4", forwardAddress)
-
-  if err != nil {
-    panic(err)
-  }
-
-  connWriter, udpErr := net.DialUDP("udp4", nil, udpWriterAddr)
-  defer connWriter.Close()
-
-  if udpErr != nil {
-    panic(udpErr)
-  }
-
-  for msg := range updChannel {
-    _, wError := connWriter.Write(msg)
-    if wError != nil {
-      panic(wError)
-    }
-  }
+		udpChannel <- buf[0:n]
+	}
 
 }
 
-func StartListener(addr string, sigs chan <- os.Signal){
-  Log("Starting listener on" + addr)
+func StartProxyWriter(updChannel <-chan []byte, forwardAddress string) {
+	Log("Starting proxy writer " + forwardAddress)
+	udpWriterAddr, err := net.ResolveUDPAddr("udp4", forwardAddress)
 
-  udpAddress, err := net.ResolveUDPAddr("udp4", addr)
-  if err != nil {
-    return
-  }
+	if err != nil {
+		panic(err)
+	}
 
-  conn, err := net.ListenUDP("udp4", udpAddress)
-  defer conn.Close()
+	connWriter, udpErr := net.DialUDP("udp4", nil, udpWriterAddr)
+	defer connWriter.Close()
 
-  if err != nil {
-    return
-  }
+	if udpErr != nil {
+		panic(udpErr)
+	}
 
+	for msg := range updChannel {
+		_, wError := connWriter.Write(msg)
+		if wError != nil {
+			panic(wError)
+		}
+	}
 
-  var buf []byte = make([]byte, 1500)
+}
 
-  for {
-    time.Sleep(100 * time.Millisecond)
-    n, _, err := conn.ReadFromUDP(buf)
+func StartListener(addr string, sigs chan<- os.Signal) {
+	Log("Starting listener on" + addr)
 
-    if err != nil {
-      panic(err)
-    }
+	udpAddress, err := net.ResolveUDPAddr("udp4", addr)
+	if err != nil {
+		return
+	}
 
-    fmt.Println(n)
-    fmt.Println(string(buf[0:n]))
+	conn, err := net.ListenUDP("udp4", udpAddress)
+	defer conn.Close()
 
-    if sigs != nil {
-      sigs <- syscall.SIGINT
-    }
-  }
+	if err != nil {
+		return
+	}
+
+	var buf []byte = make([]byte, 1500)
+
+	for {
+		time.Sleep(100 * time.Millisecond)
+		n, _, err := conn.ReadFromUDP(buf)
+
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(n)
+		fmt.Println(string(buf[0:n]))
+
+		if sigs != nil {
+			sigs <- syscall.SIGINT
+		}
+	}
 }

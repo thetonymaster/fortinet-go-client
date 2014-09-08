@@ -1,83 +1,82 @@
 package proxymanager
 
 import (
-  "io/ioutil"
-  "fmt"
-  "os"
+	"fmt"
+	"io/ioutil"
+	"os"
 )
 
-
 func ExampleAddIp() {
-  CleanUp()
+	CleanUp()
 
-  Execute("a 192.123.123.123\r\n")
+	Execute("a 192.123.123.123\r\n")
 
-  fileBytes, err := ioutil.ReadFile("proxylist.txt")
+	fileBytes, err := ioutil.ReadFile("proxylist.txt")
 
-  if err != nil {
-    panic(err)
-  }
+	if err != nil {
+		panic(err)
+	}
 
-  fmt.Println(string(fileBytes))
+	fmt.Println(string(fileBytes))
 
-  // Output:
-  // 192.123.123.123
+	// Output:
+	// 192.123.123.123
 }
 
 func ExampleRemoveIp() {
-  CleanUp()
+	CleanUp()
 
-  Execute("a 192.123.123.123\r\n")
-  Execute("r 192.123.123.123\r\n")
+	Execute("a 192.123.123.123\r\n")
+	Execute("r 192.123.123.123\r\n")
 
-  fileBytes, err := ioutil.ReadFile("proxylist.txt")
+	fileBytes, err := ioutil.ReadFile("proxylist.txt")
 
-  if err != nil {
-    panic(err)
-  }
+	if err != nil {
+		panic(err)
+	}
 
-  fmt.Println(string(fileBytes))
+	fmt.Println(string(fileBytes))
 
-  // Output:
-  // 
+	// Output:
+	//
 }
 
-func ExampleListAll(){
-  CleanUp()
-  Execute("a 192.168.0.123\r\n")
-  Execute("a 192.168.0.124\r\n")
+func ExampleListAll() {
+	CleanUp()
+	Execute("a 192.168.0.123\r\n")
+	Execute("a 192.168.0.124\r\n")
 
-  fmt.Print(Execute("l "))
+	fmt.Print(Execute("l "))
 
-  _, err := ioutil.ReadFile("proxylist.txt")
+	_, err := ioutil.ReadFile("proxylist.txt")
 
-  if err == nil {
-    panic(err)
-  }
+	if err == nil {
+		panic(err)
+	}
 
-  // Output:
-  // [192.168.0.123 192.168.0.124]
+	// Output:
+	// [192.168.0.123 192.168.0.124]
 
 }
 
 func CleanUp() {
-  os.Remove("proxylist.txt")
+	os.Remove("proxylist.txt")
 }
 
 func ExampleCleanCommand() {
-  test := "l \r\n"
-  fmt.Printf("%s", cleanCommand(test))
-  // Output:
-  // l
+	test := "l \r\n"
+	fmt.Printf("%s", cleanCommand(test))
+	// Output:
+	// l
 }
 
 func ExampleGetAddresses() {
-  CleanUp()
-  Execute("a 192.168.0.123\r\n")
-  Execute("a 192.168.0.124\r\n")
+	CleanUp()
+	Execute("a 192.168.0.123\r\n")
+	Execute("a 192.168.0.124\r\n")
 
-  fmt.Println(GetAddresses())
+	fmt.Println(GetAddresses())
 
-  // Output:
-  // [192.168.0.123 192.168.0.124]
+	// Output:
+	// [192.168.0.123 192.168.0.124]
 }
