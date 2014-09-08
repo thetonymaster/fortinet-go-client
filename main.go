@@ -34,9 +34,8 @@ func main() {
 		Log("Starting server at " + serverAddress)
 	} else {
 
-		serverAddress := ":3030"
-		go proxy.StartListener(":3030", nil)
-		Log("Starting client at " + serverAddress)
+		go proxy.StartListener(clientAddr)
+		Log("Starting client at " + clientAddr)
 	}
 
 	for {

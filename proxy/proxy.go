@@ -5,8 +5,6 @@ import (
 	. "github.com/antonio-cabreraglz/fortinet-go-client/logger"
 	"github.com/antonio-cabreraglz/fortinet-go-client/proxymanager"
 	"net"
-	"os"
-	"syscall"
 	"time"
 )
 
@@ -67,19 +65,22 @@ func StartProxyWriter(updChannel <-chan []byte, forwardAddress string) {
 
 }
 
-func StartListener(addr string, sigs chan<- os.Signal) {
-	Log("Starting listener on" + addr)
+// StartListener in parameter addr, if there is an error in the address format
+// or in when binding the address we are panicking since we want to know what
+// is going on ASAP
+func StartListener(addr string) {
+	Log("Starting listener on: " + addr)
 
-	udpAddress, err := net.ResolveUDPAddr("udp4", addr)
-	if err != nil {
-		return
+	udpAddress, resolveErr := net.ResolveUDPAddr("udp4", addr)
+	if resolveErr != nil {
+		panic(resolveErr)
 	}
 
-	conn, err := net.ListenUDP("udp4", udpAddress)
+	conn, listenErr := net.ListenUDP("udp4", udpAddress)
 	defer conn.Close()
 
-	if err != nil {
-		return
+	if listenErr != nil {
+		panic(listenErr)
 	}
 
 	var buf []byte = make([]byte, 1500)
@@ -89,14 +90,9 @@ func StartListener(addr string, sigs chan<- os.Signal) {
 		n, _, err := conn.ReadFromUDP(buf)
 
 		if err != nil {
-			panic(err)
+			Log(fmt.Sprintf("Error reading %s: %s", addr, err))
 		}
 
-		fmt.Println(n)
-		fmt.Println(string(buf[0:n]))
-
-		if sigs != nil {
-			sigs <- syscall.SIGINT
-		}
+		Log(string(buf[0:n]))
 	}
 }

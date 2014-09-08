@@ -30,6 +30,9 @@ func init() {
 
 			w.Flush()
 			f.Close()
+
+			log.SetOutput(os.Stdout)
+			log.Println(msg)
 		}
 	}(logChannel)
 }
