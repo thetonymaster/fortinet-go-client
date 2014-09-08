@@ -22,11 +22,6 @@ func ListenUDP(addr string) {
 	defer conn.Close()
 
 	var buf []byte = make([]byte, 1500)
-	udpChannel := make(chan []byte)
-
-	for _, address := range proxymanager.GetAddresses() {
-		go StartProxyWriter(udpChannel, address)
-	}
 
 	for {
 		time.Sleep(100 * time.Millisecond)
@@ -36,31 +31,35 @@ func ListenUDP(addr string) {
 			panic(err)
 		}
 
-		udpChannel <- buf[0:n]
+
+		for _, address := range proxymanager.GetAddresses() {
+			go StartProxyWriter(buf[0:n], address)
+		}
 	}
 
 }
 
-func StartProxyWriter(updChannel <-chan []byte, forwardAddress string) {
+func StartProxyWriter(message []byte, forwardAddress string) {
 	Log("Starting proxy writer " + forwardAddress)
 	udpWriterAddr, err := net.ResolveUDPAddr("udp4", forwardAddress)
 
 	if err != nil {
-		panic(err)
+		Log(fmt.Sprintf("Forwarding resolve error at %s: %s", forwardAddress, err))
+		return
 	}
 
 	connWriter, udpErr := net.DialUDP("udp4", nil, udpWriterAddr)
 	defer connWriter.Close()
 
 	if udpErr != nil {
-		panic(udpErr)
+		Log(fmt.Sprintf("Forwarding dial error at %s: %s", forwardAddress, udpErr))
+		return
 	}
 
-	for msg := range updChannel {
-		_, wError := connWriter.Write(msg)
-		if wError != nil {
-			panic(wError)
-		}
+	_, wError := connWriter.Write(message)
+	if wError != nil {
+		Log(fmt.Sprintf("Forwarding write error at %s: %s", forwardAddress, udpErr))
+		return
 	}
 
 }
