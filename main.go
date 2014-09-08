@@ -21,14 +21,13 @@ func init() {
 }
 
 func main() {
-	Log("asdfakjfhadsjkfhjdksa")
 	flag.Parse()
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT)
 
 	if runAsServer {
-		serverAddress := "255.255.255.255:514"
+		serverAddress := ":514"
 		go proxymanager.StartServer()
 		go proxy.ListenUDP(serverAddress)
 		Log("Starting server at " + serverAddress)

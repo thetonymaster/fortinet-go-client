@@ -4,7 +4,7 @@ different computers so they can analyze the traffic.
 
 ## TODO
 
-- Command line allows you to choose between client and server mode
-- Better logging in order to now the activities being performed
+- Multiplex messages to be proxied
+- Detect changes to proxylist.txt
 - Analyze the traffic on each client node
 - OpenGL charts

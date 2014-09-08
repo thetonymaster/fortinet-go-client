@@ -2,42 +2,32 @@ package proxymanager
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"strings"
+
+	. "github.com/antonio-cabreraglz/fortinet-go-client/logger"
 )
 
 func StartServer() {
 	ln, err := net.Listen("tcp", ":6000")
 	if err != nil {
-		log.Fatal(err)
+		Log(err.Error())
 	}
-
-	msgchan := make(chan string)
-	resultChannel := make(chan string)
-
-	go executeCommand(msgchan, resultChannel)
 
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			log.Println(err)
+			Log(err.Error())
 			continue
 		}
 
-		go handleConnection(conn, msgchan, resultChannel)
+		go handleConnection(conn)
 	}
 }
 
-func handleConnection(c net.Conn, msgchan chan<- string, resultChannel <-chan string) {
-	fmt.Println("Accepted connection")
+func handleConnection(c net.Conn) {
+	Log("Accepted connection")
 	buf := make([]byte, 4096)
-
-	go func(c net.Conn, resultChannel <-chan string) {
-		for result := range resultChannel {
-			c.Write([]byte(result))
-		}
-	}(c, resultChannel)
 
 	for {
 		n, err := c.Read(buf)
@@ -46,16 +36,11 @@ func handleConnection(c net.Conn, msgchan chan<- string, resultChannel <-chan st
 			break
 		}
 
-		msgchan <- string(buf[0:n])
-	}
-
-	log.Printf("Connection from %v closed.", c.RemoteAddr())
-}
-
-func executeCommand(msgchan <-chan string, resultChannel chan<- string) {
-	for command := range msgchan {
-		resultChannel <- "Executing " + command + "\n"
+		command := string(buf[0:n])
+		c.Write([]byte("Executing " + command + "\n"))
 		result := Execute(command)
-		resultChannel <- "Result is " + strings.Join(result, ",") + "\n"
+		c.Write([]byte(strings.Join(result, ", ") + "\n"))
 	}
+
+	Log(fmt.Sprintf("Connection from %v closed.", c.RemoteAddr()))
 }
