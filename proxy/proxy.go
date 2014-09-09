@@ -1,103 +1,97 @@
 package proxy
 
 import (
-  . "github.com/antonio-cabreraglz/fortinet-go-client/logger"
-  "fmt"
-  "net"
-  "time"
-  "github.com/antonio-cabreraglz/fortinet-go-client/proxymanager"
-  "os"
-  "syscall"
+	"fmt"
+	. "github.com/antonio-cabreraglz/fortinet-go-client/logger"
+	"github.com/antonio-cabreraglz/fortinet-go-client/proxymanager"
+	"net"
+	"time"
 )
 
 func ListenUDP(addr string) {
-  udpAddress, err := net.ResolveUDPAddr("udp4", addr)
-  if err != nil {
-    panic(err)
-  }
-  conn, err := net.ListenUDP("udp4", udpAddress)
+	udpAddress, err := net.ResolveUDPAddr("udp4", addr)
+	if err != nil {
+		panic(err)
+	}
+	conn, err := net.ListenUDP("udp4", udpAddress)
 
-  if err != nil {
-    panic(err)
-  }
+	if err != nil {
+		panic(err)
+	}
 
-  defer conn.Close()
+	defer conn.Close()
 
-  var buf []byte = make([]byte, 1500)
-  udpChannel := make(chan []byte)
+	var buf []byte = make([]byte, 1500)
 
-  for _, address := range proxymanager.GetAddresses() {
-    go StartProxyWriter(udpChannel, address)
-  }
+	for {
+		time.Sleep(100 * time.Millisecond)
+		n, _, err := conn.ReadFromUDP(buf)
 
-  for {
-    time.Sleep(100 * time.Millisecond)
-    n, _, err := conn.ReadFromUDP(buf)
+		if err != nil {
+			panic(err)
+		}
 
-    if err != nil {
-      panic(err)
-    }
 
-    udpChannel <- buf[0:n]
-  }
+		for _, address := range proxymanager.GetAddresses() {
+			go StartProxyWriter(buf[0:n], address)
+		}
+	}
 
 }
 
-func StartProxyWriter(updChannel <- chan []byte, forwardAddress string) {
-  Log("Starting proxy writer " + forwardAddress)
-  udpWriterAddr, err := net.ResolveUDPAddr("udp4", forwardAddress)
+func StartProxyWriter(message []byte, forwardAddress string) {
+	Log("Starting proxy writer " + forwardAddress)
+	udpWriterAddr, err := net.ResolveUDPAddr("udp4", forwardAddress)
 
-  if err != nil {
-    panic(err)
-  }
+	if err != nil {
+		Log(fmt.Sprintf("Forwarding resolve error at %s: %s", forwardAddress, err))
+		return
+	}
 
-  connWriter, udpErr := net.DialUDP("udp4", nil, udpWriterAddr)
-  defer connWriter.Close()
+	connWriter, udpErr := net.DialUDP("udp4", nil, udpWriterAddr)
+	defer connWriter.Close()
 
-  if udpErr != nil {
-    panic(udpErr)
-  }
+	if udpErr != nil {
+		Log(fmt.Sprintf("Forwarding dial error at %s: %s", forwardAddress, udpErr))
+		return
+	}
 
-  for msg := range updChannel {
-    _, wError := connWriter.Write(msg)
-    if wError != nil {
-      panic(wError)
-    }
-  }
+	_, wError := connWriter.Write(message)
+	if wError != nil {
+		Log(fmt.Sprintf("Forwarding write error at %s: %s", forwardAddress, udpErr))
+		return
+	}
 
 }
 
-func StartListener(addr string, sigs chan <- os.Signal){
-  Log("Starting listener on" + addr)
+// StartListener in parameter addr, if there is an error in the address format
+// or in when binding the address we are panicking since we want to know what
+// is going on ASAP
+func StartListener(addr string) {
+	Log("Starting listener on: " + addr)
 
-  udpAddress, err := net.ResolveUDPAddr("udp4", addr)
-  if err != nil {
-    return
-  }
+	udpAddress, resolveErr := net.ResolveUDPAddr("udp4", addr)
+	if resolveErr != nil {
+		panic(resolveErr)
+	}
 
-  conn, err := net.ListenUDP("udp4", udpAddress)
-  defer conn.Close()
+	conn, listenErr := net.ListenUDP("udp4", udpAddress)
+	defer conn.Close()
 
-  if err != nil {
-    return
-  }
+	if listenErr != nil {
+		panic(listenErr)
+	}
 
+	var buf []byte = make([]byte, 1500)
 
-  var buf []byte = make([]byte, 1500)
+	for {
+		time.Sleep(100 * time.Millisecond)
+		n, _, err := conn.ReadFromUDP(buf)
 
-  for {
-    time.Sleep(100 * time.Millisecond)
-    n, _, err := conn.ReadFromUDP(buf)
+		if err != nil {
+			Log(fmt.Sprintf("Error reading %s: %s", addr, err))
+		}
 
-    if err != nil {
-      panic(err)
-    }
-
-    fmt.Println(n)
-    fmt.Println(string(buf[0:n]))
-
-    if sigs != nil {
-      sigs <- syscall.SIGINT
-    }
-  }
+		Log(string(buf[0:n]))
+	}
 }

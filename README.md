@@ -4,7 +4,13 @@ different computers so they can analyze the traffic.
 
 ## TODO
 
-- Command line allows you to choose between client and server mode
-- Better logging in order to now the activities being performed
 - Analyze the traffic on each client node
 - OpenGL charts
+
+# Questions
+
+On multiplexing messages:
+
+- 1 channel per forward address with one always opened connection per
+  address vs one connection per message one connection per message per
+	forward address ???

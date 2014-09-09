@@ -1,53 +1,50 @@
 package main
 
 import (
-  . "github.com/antonio-cabreraglz/fortinet-go-client/logger"
+	. "github.com/antonio-cabreraglz/fortinet-go-client/logger"
 
-  "os"
-  "os/signal"
-  "github.com/antonio-cabreraglz/fortinet-go-client/proxymanager"
-  "github.com/antonio-cabreraglz/fortinet-go-client/proxy"
-  "fmt"
-  "flag"
-  "syscall"
+	"flag"
+	"fmt"
+	"github.com/antonio-cabreraglz/fortinet-go-client/proxy"
+	"github.com/antonio-cabreraglz/fortinet-go-client/proxymanager"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 var runAsServer bool
 var clientAddr string
 
 func init() {
-  flag.BoolVar(&runAsServer, "server", false, "do something")
-  flag.StringVar(&clientAddr, "clientAddr", ":3030", "Server Address")
+	flag.BoolVar(&runAsServer, "server", false, "do something")
+	flag.StringVar(&clientAddr, "clientAddr", ":3030", "Server Address")
 }
 
-func main(){
-  Log("asdfakjfhadsjkfhjdksa")
-  flag.Parse()
+func main() {
+	flag.Parse()
 
-  sigs := make(chan os.Signal, 1)
-  signal.Notify(sigs, syscall.SIGINT)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT)
 
-  if runAsServer {
-    serverAddress := "255.255.255.255:514"
-    go proxymanager.StartServer()
-    go proxy.ListenUDP(serverAddress)
-    Log("Starting server at " + serverAddress)
-  } else {
+	if runAsServer {
+		serverAddress := ":514"
+		go proxymanager.StartServer()
+		go proxy.ListenUDP(serverAddress)
+		Log("Starting server at " + serverAddress)
+	} else {
 
-    serverAddress := ":3030"
-    go  proxy.StartListener(":3030", nil)
-    Log("Starting client at " + serverAddress)
-  }
+		go proxy.StartListener(clientAddr)
+		Log("Starting client at " + clientAddr)
+	}
 
-  for {
-    select {
-      case  msg:= <- sigs: {
-        fmt.Println()
-        fmt.Println(msg)
-        return
-      }
-    }
-  }
+	for {
+		select {
+		case msg := <-sigs:
+			{
+				fmt.Println()
+				fmt.Println(msg)
+				return
+			}
+		}
+	}
 }
-
-

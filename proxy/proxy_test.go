@@ -1,64 +1,81 @@
 package proxy
 
 import (
-  "net"
-  "bufio"
-  "os"
-  "os/signal"
-  "syscall"
-  "time"
+	"bufio"
+	"net"
+	"io/ioutil"
+	"os"
+	"time"
+	"testing"
+	"regexp"
+	"strings"
 )
 
+func TestForwarder(t *testing.T) {
+	cleanUp()
 
-func ExampleForwarder() {
-  readerServerAddress := ":3333"
+	clientAddress := ":3333"
+	writeTestClientAddress(clientAddress)
 
-  f, err := os.Create("proxylist.txt")
-  if err != nil {
-    panic(err)
-  }
-  defer f.Close()
+	serverAddress := ":3030"
+	go ListenUDP(serverAddress)
 
-  w := bufio.NewWriter(f)
-  _, wrtErr := w.WriteString(readerServerAddress)
+	go StartListener(clientAddress)
 
-  if wrtErr != nil {
-    panic(wrtErr)
-  }
+	// Give some time to servers to get up
+	time.Sleep(100 * time.Millisecond)
 
-  w.Flush()
+	//Get the server ready to read packages from the proxy
+	udpWriterAddr, err := net.ResolveUDPAddr("udp4", serverAddress)
 
-  writerServerAddress := ":3030"
+	if err != nil {
+		panic(err)
+	}
 
-  go ListenUDP(writerServerAddress)
-  sigs := make(chan os.Signal, 1)
-   signal.Notify(sigs, syscall.SIGINT)
-  go StartListener(readerServerAddress, sigs)
-  time.Sleep(200 * time.Millisecond)
-  //Get the server ready to read packages from the proxy
-  // Write to the proxy 
-  udpWriterAddr, err := net.ResolveUDPAddr("udp4", writerServerAddress)
+	connWriter, udpErr := net.DialUDP("udp4", nil, udpWriterAddr)
 
-  if err != nil {
-    panic(err)
-  }
+	if udpErr != nil {
+		panic(udpErr)
+	}
 
-  connWriter, udpErr := net.DialUDP("udp4", nil, udpWriterAddr)
+	// Write to the proxy
+	connWriter.Write([]byte("holi"))
 
-  if udpErr != nil {
-    panic(udpErr)
-  }
+	// Give some time for the message to get to the servers
+	time.Sleep(100 * time.Millisecond)
 
-  connWriter.Write([]byte("holi"))
+	logBytes, readErr := ioutil.ReadFile("fortinet.log")
 
-  for {
-    select {
-      case <- sigs: {
-        return
-      }
-    }
-  }
-  // Output:
-  // 4
-  // holi
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+
+	logLines := strings.Split(string(logBytes), "\n")
+	matched, _ := regexp.MatchString("\\d{4}/\\d{2}/\\d{2} \\d{2}:\\d{2}:\\d{2} holi", logLines[2])
+
+	if !matched {
+		t.Fatal(logLines[2])
+	}
+}
+
+func writeTestClientAddress(clientAddress string) {
+	f, err := os.Create("proxylist.txt")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+	_, wrtErr := w.WriteString(clientAddress)
+
+	if wrtErr != nil {
+		panic(wrtErr)
+	}
+
+	w.Flush()
+}
+
+func cleanUp() {
+	os.Remove("proxylist.txt")
+	os.Remove("fortinet.log")
 }
